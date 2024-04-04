@@ -226,6 +226,29 @@ def transcode(flac_file, output_dir, output_format):
 
     return transcode_file
 
+def replace_ignoring_years(text, replace_what, replace_with):
+    '''
+    Smart replace to avoid replacing years. Solves problem with album year getting changed.
+
+    i.e. replace_with_ignoring_years("album (2024) [24B-48kHz]", 24, 16) -> "album (2024) [16B-48kHz]"
+    '''
+    replace_what = str(replace_what)
+    replace_with = str(replace_with)
+
+    # Matches "replace_what" only if not preceded or followed by a digit.
+    # Ensures that "replace_what" is a standalone instance.
+    pattern = rf'(?<!\d){re.escape(replace_what)}(?!\d)|{re.escape(replace_what)}$'
+    # Find all matches in the text
+    matches = re.finditer(pattern, text)
+
+    # Iterate over the matches
+    for match in matches:
+        # Expand the match and check the text to make sure it's not a year.
+        if not re.search(r'(?<!\d)\d{4}(?!\d)', text[match.start()-3:match.end()+3]):
+            text = text[:match.start()] + replace_with + text[match.end():]
+
+    return text
+
 def get_transcode_dir(flac_dir, output_dir, output_format, resample):
     full_flac_dir = flac_dir
     transcode_dir = os.path.basename(flac_dir)
@@ -293,44 +316,44 @@ def get_transcode_dir(flac_dir, output_dir, output_format, resample):
         rate = resample_rate(full_flac_dir)
         if rate == 44100:
             if '24' in flac_dir and '176.4' in flac_dir:
-                transcode_dir = transcode_dir.replace('24', '16')
+                transcode_dir = replace_ignoring_years(transcode_dir, '24', '16')
                 transcode_dir = transcode_dir.replace('176.4', '44')
             elif '24' in flac_dir and '176 4' in flac_dir:
-                transcode_dir = transcode_dir.replace('24', '16')
+                transcode_dir = replace_ignoring_years(transcode_dir, '24', '16')
                 transcode_dir = transcode_dir.replace('176 4', '44')
             elif '24' in flac_dir and '176' in flac_dir:
-                transcode_dir = transcode_dir.replace('24', '16')
+                transcode_dir = replace_ignoring_years(transcode_dir, '24', '16')
                 transcode_dir = transcode_dir.replace('176', '44')
             elif '24' in flac_dir and '88.2' in flac_dir:
-                transcode_dir = transcode_dir.replace('24', '16')
+                transcode_dir = replace_ignoring_years(transcode_dir, '24', '16')
                 transcode_dir = transcode_dir.replace('88.2', '44')
             elif '24' in flac_dir and '88 2' in flac_dir:
-                transcode_dir = transcode_dir.replace('24', '16')
+                transcode_dir = replace_ignoring_years(transcode_dir, '24', '16')
                 transcode_dir = transcode_dir.replace('88 2', '44')
             elif '24' in flac_dir and '88' in flac_dir:
-                transcode_dir = transcode_dir.replace('24', '16')
+                transcode_dir = replace_ignoring_years(transcode_dir, '24', '16')
                 transcode_dir = transcode_dir.replace('88', '44')
             elif '24' in flac_dir and '44.1' in flac_dir:
-                transcode_dir = transcode_dir.replace('24', '16')
+                transcode_dir = replace_ignoring_years(transcode_dir, '24', '16')
                 transcode_dir = transcode_dir.replace('44.1', '44')
             elif '24' in flac_dir and '44 1' in flac_dir:
-                transcode_dir = transcode_dir.replace('24', '16')
+                transcode_dir = replace_ignoring_years(transcode_dir, '24', '16')
                 transcode_dir = transcode_dir.replace('44 1', '44')
             elif '24' in flac_dir and '44' in flac_dir:
-                transcode_dir = transcode_dir.replace('24', '16')
+                transcode_dir = replace_ignoring_years(transcode_dir, '24', '16')
             else:
                 transcode_dir += ' [16-44]'
         elif rate == 48000:
             if '24' in flac_dir and '192' in flac_dir:
-                transcode_dir = transcode_dir.replace('24', '16')
+                transcode_dir = replace_ignoring_years(transcode_dir, '24', '16')
                 transcode_dir = transcode_dir.replace('192', '48')
             elif '24' in flac_dir and '96' in flac_dir:
                 # XXX: theoretically, this could replace part of the album title too.
                 # e.g. "24 days in 96 castles - [24-96]" would become "16 days in 44 castles - [16-44]"
-                transcode_dir = transcode_dir.replace('24', '16')
+                transcode_dir = replace_ignoring_years(transcode_dir, '24', '16')
                 transcode_dir = transcode_dir.replace('96', '48')
             elif '24' in flac_dir and '48' in flac_dir:
-                transcode_dir = transcode_dir.replace('24', '16')
+                transcode_dir = replace_ignoring_years(transcode_dir, '24', '16')
             else:
                 transcode_dir += " [16-48]"
 
